@@ -55,24 +55,25 @@ npm run dev    # → http://localhost:3000
 
 Починаємо зі 100, кожен ризик знімає бали:
 
-| Перевірка | Severity | Штраф |
-|---|---|---|
-| Скручений пробіг (diff > 100k) | critical | −65 |
-| Скручений пробіг (diff 50–100k) | critical | −55 |
-| Скручений пробіг (diff 20–50k) | critical | −45 |
-| Скручений пробіг (diff < 20k) | critical | −35 |
-| Підозріло малий пробіг без підтвердження | high | −15 |
-| 4+ власників | high | −25 |
-| 3 власники | medium | −15 |
-| Швидке переоформлення | high | −16 |
-| Авто з США | high | −15 |
-| Продається 2+ роки | critical | −22 |
-| Продається 1–2 роки | high | −14 |
-| Ціна завищена > 30% | high | −15 |
-| Ціна нижча > 22% (підозріло дешево) | critical | −20 |
-| VIN не перевірено | low | −5 |
+| Перевірка                                | Severity | Штраф |
+| ---------------------------------------- | -------- | ----- |
+| Скручений пробіг (diff > 100k)           | critical | −65   |
+| Скручений пробіг (diff 50–100k)          | critical | −55   |
+| Скручений пробіг (diff 20–50k)           | critical | −45   |
+| Скручений пробіг (diff < 20k)            | critical | −35   |
+| Підозріло малий пробіг без підтвердження | high     | −15   |
+| 4+ власників                             | high     | −25   |
+| 3 власники                               | medium   | −15   |
+| Швидке переоформлення                    | high     | −16   |
+| Авто з США                               | high     | −15   |
+| Продається 2+ роки                       | critical | −22   |
+| Продається 1–2 роки                      | high     | −14   |
+| Ціна завищена > 30%                      | high     | −15   |
+| Ціна нижча > 22% (підозріло дешево)      | critical | −20   |
+| VIN не перевірено                        | low      | −5    |
 
 **Рейтинг довіри:**
+
 - 80–100 → ✅ Можна дивитись
 - 60–79 → ⚠️ Обережно — торгуйся
 - 35–59 → 🔴 Дуже підозріло
@@ -98,12 +99,12 @@ npm run dev    # → http://localhost:3000
 
 ### База авто (15 моделей)
 
-| Бюджет | Авто |
-|---|---|
-| до $8k | Toyota Corolla '06, Skoda Octavia A5, Mazda 3 '08 |
-| $8–15k | Toyota Camry '06, Kia Sportage '12, Skoda Octavia A7, Toyota RAV4 '05 |
-| $15–25k | Toyota Camry '17, Toyota RAV4 '13, Skoda Kodiaq '17, VW Passat B8 |
-| $25k+ | Toyota RAV4 '19, Toyota Camry '21, Kia Sportage '22 |
+| Бюджет  | Авто                                                                  |
+| ------- | --------------------------------------------------------------------- |
+| до $8k  | Toyota Corolla '06, Skoda Octavia A5, Mazda 3 '08                     |
+| $8–15k  | Toyota Camry '06, Kia Sportage '12, Skoda Octavia A7, Toyota RAV4 '05 |
+| $15–25k | Toyota Camry '17, Toyota RAV4 '13, Skoda Kodiaq '17, VW Passat B8     |
+| $25k+   | Toyota RAV4 '19, Toyota Camry '21, Kia Sportage '22                   |
 
 Кожне авто має: `scores` (reliability, economy, comfort, dynamics, safety — 0–10), `pros[]`, `cons[]`, `watchOut[]`.
 
@@ -112,12 +113,14 @@ npm run dev    # → http://localhost:3000
 ## Deploy
 
 ### Vercel (рекомендовано)
+
 ```bash
 npm i -g vercel
 vercel
 ```
 
 ### Netlify
+
 ```bash
 npm run build
 # publish: out/  (додай `output: 'export'` в next.config.js для static export)
@@ -130,6 +133,7 @@ npm run build
 Проєкт не потребує жодних env змінних — все static, без API.
 
 Опційно для SEO:
+
 ```env
 NEXT_PUBLIC_SITE_URL=https://freecartop.vercel.app
 ```

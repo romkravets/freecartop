@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Copy, Check, Share2, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Info, Share2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { analyzeRisk, generateShareText, IMPORT_OPTIONS } from '../lib/analyzer';
 
 // ── Score Ring ────────────────────────────────────────────────

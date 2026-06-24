@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
 import { ChevronLeft, RotateCcw } from 'lucide-react';
-import { BUDGETS, PURPOSES, BODY_TYPES, FUELS, PRIORITIES, pickCars } from '../lib/pickerData';
+import { useMemo, useState } from 'react';
+import { BODY_TYPES, BUDGETS, FUELS, pickCars, PRIORITIES, PURPOSES } from '../lib/pickerData';
 
 // ── Step Option Card ──────────────────────────────────────────
 function OptionCard({ emoji, label, desc, active, onClick }) {

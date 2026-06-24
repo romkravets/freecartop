@@ -1,10 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 
+// AI versions (call Claude API)
+const AIAnalyzer  = dynamic(() => import('../components/AIAnalyzer'),  { ssr: false });
+const AICarPicker = dynamic(() => import('../components/AICarPicker'),  { ssr: false });
+
+// Static fallbacks (no API key needed)
 const CarAnalyzer = dynamic(() => import('../components/CarAnalyzer'), { ssr: false });
 const CarPicker   = dynamic(() => import('../components/CarPicker'),   { ssr: false });
+
+const HAS_AI = Boolean(process.env.NEXT_PUBLIC_AI_ENABLED === 'true');
 
 // ── Example cases (like those Instagram posts) ────────────────
 const EXAMPLES = [
@@ -132,24 +139,46 @@ export default function Page() {
         <main className="max-w-6xl mx-auto px-4 py-8">
           {view === 'analyzer' && (
             <div>
-              <div className="mb-6">
-                <h1 className="text-2xl font-black text-white">🔍 Аналізатор авто</h1>
-                <p className="text-gray-500 text-sm mt-1">
-                  Введи дані оголошення — покажемо всі червоні прапорці і рейтинг довіри
-                </p>
+              <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h1 className="text-2xl font-black text-white">
+                    {HAS_AI ? '🤖 AI-аналізатор авто' : '🔍 Аналізатор авто'}
+                  </h1>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {HAS_AI
+                      ? 'Вводиш дані — AI робить розбір як Instagram-пост + прогноз ціни і поради'
+                      : 'Введи дані оголошення — покажемо всі червоні прапорці і рейтинг довіри'}
+                  </p>
+                </div>
+                {HAS_AI && (
+                  <span className="text-xs bg-amber-900/50 border border-amber-700 text-amber-400 px-2 py-1 rounded-full font-semibold">
+                    ✨ Powered by Claude AI
+                  </span>
+                )}
               </div>
-              <CarAnalyzer />
+              {HAS_AI ? <AIAnalyzer /> : <CarAnalyzer />}
             </div>
           )}
           {view === 'picker' && (
             <div>
-              <div className="mb-6">
-                <h1 className="text-2xl font-black text-white">🎯 Підбір авто</h1>
-                <p className="text-gray-500 text-sm mt-1">
-                  Дай відповідь на 5 питань — підберемо найкращі варіанти для UA ринку
-                </p>
+              <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h1 className="text-2xl font-black text-white">
+                    {HAS_AI ? '🤖 AI-підбір авто' : '🎯 Підбір авто'}
+                  </h1>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {HAS_AI
+                      ? 'Дай відповідь на 5 питань — AI підбере найкращі варіанти з поясненням'
+                      : 'Дай відповідь на 5 питань — підберемо найкращі варіанти для UA ринку'}
+                  </p>
+                </div>
+                {HAS_AI && (
+                  <span className="text-xs bg-amber-900/50 border border-amber-700 text-amber-400 px-2 py-1 rounded-full font-semibold">
+                    ✨ Powered by Claude AI
+                  </span>
+                )}
               </div>
-              <CarPicker />
+              {HAS_AI ? <AICarPicker /> : <CarPicker />}
             </div>
           )}
         </main>

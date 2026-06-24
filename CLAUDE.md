@@ -3,6 +3,7 @@
 ## Що це за проєкт
 
 Інструмент для покупців авто в Україні. Два модулі:
+
 1. **Аналізатор оголошення** — детектор ризиків (скручений пробіг, підозрілі власники, завищена ціна, довге оголошення)
 2. **Підбір авто** — 5-кроковий wizard → топ-3 авто під потреби користувача
 
@@ -15,10 +16,11 @@
 - **Runtime:** Node.js 20+
 - **Framework:** Next.js 14 (App Router)
 - **Мова:** JavaScript (JSX, без TypeScript)
+- **AI:** Anthropic Claude API (`@anthropic-ai/sdk`) — модель `claude-haiku-4-5-20251001`
 - **Стилі:** Tailwind CSS 3 + кастомні CSS-змінні
 - **Іконки:** Lucide React
 - **Деплой:** Vercel
-- **БД:** немає — все pure functions на клієнті
+- **БД:** немає — все pure functions на клієнті або AI на сервері
 
 ---
 
@@ -26,17 +28,23 @@
 
 ```
 app/
-  layout.jsx        # SEO metadata, Google Fonts
-  globals.css       # Tailwind base + CSS vars (--bg, --surface, --border...)
-  page.jsx          # Лендинг + SPA-навігація: 'landing' | 'analyzer' | 'picker'
+  layout.jsx              # SEO metadata, Google Fonts
+  globals.css             # Tailwind base + CSS vars (--bg, --surface, --border...)
+  page.jsx                # Лендинг + SPA-навігація: 'landing' | 'analyzer' | 'picker'
+                          # Якщо NEXT_PUBLIC_AI_ENABLED=true → рендерить AI-компоненти
+  api/
+    analyze/route.js      # POST /api/analyze — Claude аналізує оголошення
+    pick/route.js         # POST /api/pick — Claude підбирає авто
 
 components/
-  CarAnalyzer.jsx   # Форма + результати: ScoreRing, FlagCard, ShareButton
-  CarPicker.jsx     # Wizard 5 кроків: OptionCard, ProgressBar, CarCard
+  AIAnalyzer.jsx          # AI версія аналізатора — зі URL-полем, викликає /api/analyze
+  AICarPicker.jsx         # AI версія wizard — додатковий крок "побажання", викликає /api/pick
+  CarAnalyzer.jsx         # Статична версія (без API ключа) — rule-based перевірки
+  CarPicker.jsx           # Статична версія (без API ключа) — фіксована база авто
 
 lib/
-  analyzer.js       # analyzeRisk() + generateShareText() — вся бізнес-логіка
-  pickerData.js     # База авто UA ринку + pickCars()
+  analyzer.js             # analyzeRisk() + generateShareText() — rule-based логіка
+  pickerData.js           # База авто UA ринку + pickCars() — fallback без AI
 ```
 
 ---
@@ -50,7 +58,122 @@ npm run dev           # http://localhost:3000
 # Якщо npm run dev не спрацьовує (термінал не в папці проєкту):
 cd /Users/romkravets/Documents/GitHub/freecartop
 ./node_modules/.bin/next dev --port 3001
+
+# Для AI режиму — скопіюй .env.local.example → .env.local і встав API ключ:
+cp .env.local.example .env.local
+# Відкрий .env.local і встав ANTHROPIC_API_KEY=sk-ant-...
+# Встав NEXT_PUBLIC_AI_ENABLED=true
 ```
+
+---
+
+## AI API Routes
+
+### POST /api/analyze — аналіз оголошення
+
+**Вхід (JSON):**
+
+```js
+{
+  (make,
+    model,
+    year,
+    claimedMileage,
+    prevMileage,
+    owners,
+    importCountry,
+    fuelType,
+    body,
+    priceAsked,
+    marketPrice,
+    weeksOnSale,
+    fastReReg,
+    vinChecked,
+    listingUrl);
+}
+```
+
+**Вихід:**
+
+```js
+{
+  ok: true,
+  result: {
+    score: 12,                    // 0-100
+    verdict: "☠️ ТІКАЙ — класична пастка",
+    verdictLevel: "run",          // safe | caution | suspicious | run
+    postText: "...",              // Instagram-стиль пост, 150-300 символів
+    flags: [{ severity, icon, title, detail }],
+    positives: ["..."],
+    priceForecast: "Через рік піде за ~$14 400",
+    negotiationTip: "..."
+  }
+}
+```
+
+**Безпека:** rate limit 5 req/IP/10 хв, body size ≤16KB, sanitize всіх вхідних рядків, API key guard.
+
+### POST /api/pick — AI підбір авто
+
+**Вхід:**
+
+```js
+{
+  (budget,
+    budgetLabel,
+    purpose,
+    purposeLabel,
+    body,
+    bodyLabel,
+    fuel,
+    fuelLabel,
+    priority,
+    priorityLabel,
+    extraNotes);
+}
+```
+
+**Вихід:**
+
+```js
+{
+  ok: true,
+  result: {
+    intro: "...",
+    cars: [{
+      rank, make, model, generation, icon, priceRange,
+      whyBest, scores: { reliability, economy, comfort, dynamics, safety },
+      pros, cons, watchOut, marketTip
+    }]
+  }
+}
+```
+
+**Scores:** завжди 1–10 (клампимо на сервері перед відповіддю).
+
+---
+
+## Режими роботи
+
+### AI режим (з ANTHROPIC_API_KEY)
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+NEXT_PUBLIC_AI_ENABLED=true
+```
+
+- `page.jsx` рендерить `AIAnalyzer` і `AICarPicker`
+- Результати динамічні, AI генерує персоналізований розбір
+
+### Статичний режим (без ключа, fallback)
+
+```env
+NEXT_PUBLIC_AI_ENABLED=false
+```
+
+- `page.jsx` рендерить `CarAnalyzer` і `CarPicker`
+- Все працює без API — rule-based перевірки і фіксована база авто
+- Корисно для localhost розробки без ключа
 
 ---
 
@@ -59,6 +182,7 @@ cd /Users/romkravets/Documents/GitHub/freecartop
 ### `analyzeRisk(input)` → `{ score, flags, positives, verdict, verdictColor, verdictEmoji }`
 
 **Вхідні параметри:**
+
 ```js
 {
   year: number,           // рік випуску авто
@@ -77,6 +201,7 @@ cd /Users/romkravets/Documents/GitHub/freecartop
 ```
 
 **Логіка штрафів (score починається зі 100):**
+
 - Скручений пробіг: −35 до −65 залежно від різниці
 - 4+ власників: −25; 3 власники: −15; 2 власники: −3
 - Швидке переоформлення: −16
@@ -86,6 +211,7 @@ cd /Users/romkravets/Documents/GitHub/freecartop
 - VIN не перевірено: −5
 
 **Вердикти:**
+
 - ≥80 → ✅ "Можна дивитись — стандартна перевірка"
 - ≥60 → ⚠️ "Обережно — торгуйся і перевіряй ретельно"
 - ≥35 → 🔴 "Дуже підозріло — краще пропустити"
@@ -94,6 +220,7 @@ cd /Users/romkravets/Documents/GitHub/freecartop
 ### `generateShareText(carInfo, result, marketPrice)` → string
 
 Генерує текст у стилі Instagram-постів:
+
 ```
 Toyota Camry 2017 — аналіз від freecartop 🚘
 що ми маємо? 👇
@@ -113,11 +240,13 @@ Toyota Camry 2017 — аналіз від freecartop 🚘
 ### `pickCars({ budget, purpose, body, fuel, priority })` → `Car[]` (max 3)
 
 **Алгоритм:**
+
 1. Кожне авто отримує `_score`: budget+40, purpose+25, body+20, fuel+15, priority×3, avg_scores×1.5
 2. Hard filter: тільки авто що відповідають бюджету
 3. Сортування за score → топ-3
 
 **Дані авто (кожне авто містить):**
+
 ```js
 {
   id, make, model, generation,
@@ -135,6 +264,7 @@ Toyota Camry 2017 — аналіз від freecartop 🚘
 ```
 
 **Бюджети:**
+
 - `micro` → до $8 000
 - `mid` → $8 000–15 000
 - `upper` → $15 000–25 000
@@ -145,6 +275,7 @@ Toyota Camry 2017 — аналіз від freecartop 🚘
 ## UI компоненти
 
 ### CarAnalyzer.jsx
+
 - `ScoreRing` — SVG анімоване кільце, колір залежить від score
 - `FlagCard` — розкривний прапорець (критичний/серйозний/варто знати/інфо)
 - `ShareButton` — `navigator.share()` або fallback до `clipboard.writeText()`
@@ -152,6 +283,7 @@ Toyota Camry 2017 — аналіз від freecartop 🚘
 - Всі перевірки рахуються через `useMemo` — оновлюються моментально
 
 ### CarPicker.jsx
+
 - `ProgressBar` — 5 кроків, анімація заповнення
 - `OptionCard` — картка вибору (бюджет/ціль/кузов/пальне/пріоритет)
 - `CarCard` — розкривна картка авто: ScoreBar×5, pros/cons, watchOut
@@ -163,6 +295,7 @@ Toyota Camry 2017 — аналіз від freecartop 🚘
 ## Головна сторінка (`app/page.jsx`)
 
 SPA з трьома "view":
+
 - `'landing'` — лендинг з прикладами, "як це працює", CTA кнопки
 - `'analyzer'` — CarAnalyzer + sticky nav
 - `'picker'` — CarPicker + sticky nav
@@ -175,20 +308,20 @@ SPA з трьома "view":
 
 ```css
 /* CSS змінні в globals.css */
---bg: #080808          /* фон сторінки */
---surface: #111111     /* картки */
---surface-2: #1a1a1a   /* підрівень */
---border: #252525      /* межі */
---accent: #f59e0b      /* amber — основний акцент */
+--bg: #080808 /* фон сторінки */ --surface: #111111 /* картки */
+  --surface-2: #1a1a1a /* підрівень */ --border: #252525 /* межі */
+  --accent: #f59e0b /* amber — основний акцент */;
 ```
 
 Severity кольори:
+
 - `critical` → red-950 border-red-700
 - `high` → orange-950 border-orange-700
 - `medium` → amber-950 border-amber-700
 - `low` → zinc-900 border-zinc-700
 
 Verdicts:
+
 - `green` → ≥80
 - `yellow` → ≥60
 - `orange` → ≥35
@@ -199,17 +332,20 @@ Verdicts:
 ## Критичні правила
 
 ### Логіка аналізатора — незмінювані правила
+
 - `prevMileage > claimedMileage` → ЗАВЖДИ critical severity, незалежно від суми різниці
 - Ціна підозріло низька (< −22%) → critical, НЕ medium — дешево теж небезпечно
 - Score `Math.max(0, Math.min(100, score))` — завжди в межах 0–100
 - `generateShareText` — НЕ включай особисті дані (телефони, імена) у share-текст
 
 ### Підбір авто
+
 - `pickCars()` завжди повертає ≤3 результати (`.slice(0, 3)`)
 - Hard filter по бюджету — якщо немає авто в бюджеті, повертаємо порожній масив (показуємо "не знайдено")
 - Scores в базі: `reliability` від 1 до 10, ніколи не залишай 0 — це не "немає даних", краще вилучи авто
 
 ### Додавання авто в базу
+
 ```js
 // Мінімальна структура нового авто:
 {
@@ -235,11 +371,17 @@ Verdicts:
 ## Env змінні
 
 ```env
-# Опційно — тільки для SEO meta
+# Обов'язково для AI режиму
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Вмикає AI-компоненти в UI (без цього — статичні fallbacks)
+NEXT_PUBLIC_AI_ENABLED=true
+
+# Опційно для SEO meta
 NEXT_PUBLIC_SITE_URL=https://freecartop.vercel.app
 ```
 
-Проєкт НЕ потребує жодних API ключів. Вся логіка на клієнті.
+Проєкт **повністю працює без API ключа** в статичному режимі.
 
 ---
 
@@ -258,7 +400,6 @@ npm run build    # має завершитись без помилок
 
 ## Що НЕ робити
 
-- Не додавати серверний код (API routes) без потреби — проєкт навмисно static
 - Не імпортувати Lucide компоненти яких немає у встановленій версії — перевіряй наявність
 - Не захардкоджувати ціни без позначки року — ринок змінюється, вказуй `priceRange` як рядок
 - Не видаляти `'use client'` з компонентів — вони всі клієнтські (useState, useMemo)
