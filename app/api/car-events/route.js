@@ -4,6 +4,27 @@ import { getWeaknessPromptText } from "../../../lib/carMarket.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// ── In-memory event cache ────────────────────────────────────
+// Key: make|model|fuel|transmission — events are model-type specific
+const eventCache    = new Map();
+const EVENT_CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+const EVENT_CACHE_MAX = 300;
+
+function eventCacheKey(p) {
+  return `${p.make}|${p.model}|${p.fuel}|${p.transmission}`.toLowerCase().replace(/\s+/g, '_');
+}
+function getCachedEvents(key) {
+  const e = eventCache.get(key);
+  if (!e || Date.now() > e.expiresAt) { eventCache.delete(key); return null; }
+  return e.data;
+}
+function setCachedEvents(key, data) {
+  if (eventCache.size >= EVENT_CACHE_MAX) {
+    eventCache.delete(eventCache.keys().next().value); // evict oldest
+  }
+  eventCache.set(key, { data, expiresAt: Date.now() + EVENT_CACHE_TTL });
+}
+
 const rateLimitMap = new Map();
 function checkRate(ip) {
   const now = Date.now();
@@ -121,6 +142,13 @@ export async function POST(req) {
     knownIssues: String(data.knownIssues || "").slice(0, 200),
   };
 
+  // ── Cache hit ──────────────────────────────────────────────
+  const cacheKey = eventCacheKey(sanitized);
+  const cached   = getCachedEvents(cacheKey);
+  if (cached) {
+    return NextResponse.json({ ok: true, years: cached, cached: true });
+  }
+
   try {
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
@@ -153,7 +181,10 @@ export async function POST(req) {
       })),
     }));
 
-    return NextResponse.json({ ok: true, years: result.years });
+    // ── Cache store ──────────────────────────────────────────
+    setCachedEvents(cacheKey, result.years);
+
+    return NextResponse.json({ ok: true, years: result.years, cached: false });
   } catch (err) {
     console.error("[/api/car-events]", err?.message);
     return NextResponse.json({ error: "ai_error" }, { status: 502 });

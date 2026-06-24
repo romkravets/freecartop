@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CarSimulator Pro — Design</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #080808; color: #e4e4e7; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+  .sub { color: #71717a; font-size: 13px; margin-bottom: 28px; }
+
+  .section { margin-bottom: 32px; }
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #f59e0b; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #27272a; }
+
+  /* SETUP */
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .car-form { background: #111; border: 1px solid #f59e0b44; border-radius: 12px; padding: 14px; }
+  .car-form.rival { border-color: #818cf844; background: #0e0e18; }
+  .car-label { font-size: 11px; font-weight: 700; color: #f59e0b; margin-bottom: 10px; }
+  .car-form.rival .car-label { color: #818cf8; }
+  .mock-field { background: #1a1a1a; border-radius: 6px; height: 32px; margin-bottom: 8px; border: 1px solid #252525; }
+  .mock-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .rival-cta { background: #0e0e18; border: 2px dashed #818cf855; border-radius: 12px; padding: 14px; text-align: center; color: #818cf8; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-main { background: #f59e0b; color: #000; border-radius: 10px; padding: 12px; text-align: center; font-weight: 900; font-size: 14px; margin-top: 10px; }
+
+  /* PLAYING */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #27272a; border-radius: 12px; overflow: hidden; }
+  .car-col { background: #0a0a0a; padding: 14px; }
+  .car-col.rival-col { background: #0a0a12; }
+  .car-name { font-size: 11px; font-weight: 700; color: #f59e0b; margin-bottom: 6px; }
+  .car-col.rival-col .car-name { color: #818cf8; }
+  .price-big { font-size: 22px; font-weight: 900; color: #fff; font-family: monospace; margin-bottom: 10px; }
+  .stat-row { margin-bottom: 6px; }
+  .stat-label { font-size: 10px; color: #52525b; margin-bottom: 2px; display: flex; justify-content: space-between; }
+  .stat-bar { background: #1a1a1a; height: 6px; border-radius: 3px; overflow: hidden; }
+  .stat-fill { height: 100%; border-radius: 3px; transition: width .5s; }
+  .stress-row { margin-top: 10px; background: #1a0a0a; border-radius: 6px; padding: 8px; }
+  .stress-label { font-size: 10px; color: #ef4444; margin-bottom: 3px; display: flex; justify-content: space-between; }
+  .stress-bar { background: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden; }
+  .stress-fill { height: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444); border-radius: 4px; }
+  .year-cost { font-size: 11px; color: #ef4444; margin-top: 8px; }
+
+  /* LOG */
+  .log-panel { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; padding: 14px; max-height: 180px; overflow-y: auto; }
+  .log-entry { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid #1a1a1a; font-size: 11px; align-items: baseline; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-year { color: #3f3f46; width: 20px; flex-shrink: 0; font-family: monospace; }
+  .log-icon { width: 16px; flex-shrink: 0; }
+  .log-text { flex: 1; color: #a1a1aa; }
+  .log-cost { color: #ef4444; font-family: monospace; flex-shrink: 0; }
+  .log-cost.positive { color: #22c55e; }
+  .log-car-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; }
+  .log-car-badge.car1 { background: #292310; color: #f59e0b; }
+  .log-car-badge.car2 { background: #0f0f22; color: #818cf8; }
+
+  /* CHART */
+  .chart-panel { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; padding: 14px; }
+  .chart-title { font-size: 11px; color: #52525b; margin-bottom: 10px; }
+
+  /* GAMEOVER BANNER */
+  .gameover-banner { background: #1a0a0a; border: 1px solid #7f1d1d; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .gameover-emoji { font-size: 20px; }
+  .gameover-text { font-size: 12px; color: #fca5a5; }
+  .gameover-text strong { color: #fff; display: block; margin-bottom: 2px; }
+
+  /* VERDICT */
+  .verdict-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .verdict-card { border-radius: 12px; padding: 16px; text-align: center; }
+  .verdict-card.winner { background: #0d1a0d; border: 1px solid #166534; }
+  .verdict-card.loser { background: #1a0a0a; border: 1px solid #7f1d1d; }
+  .verdict-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+  .winner .verdict-badge { color: #4ade80; }
+  .loser .verdict-badge { color: #f87171; }
+  .verdict-make { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .verdict-cost { font-size: 28px; font-weight: 900; font-family: monospace; }
+  .winner .verdict-cost { color: #4ade80; }
+  .loser .verdict-cost { color: #f87171; }
+  .verdict-sub { font-size: 10px; color: #52525b; margin-top: 4px; }
+  .verdict-diff { background: #111; border-radius: 8px; padding: 12px; text-align: center; margin-top: 12px; }
+  .verdict-diff-num { font-size: 22px; font-weight: 900; color: #f59e0b; font-family: monospace; }
+  .verdict-diff-label { font-size: 11px; color: #52525b; }
+
+  /* SHARE CARD */
+  .share-card { background: linear-gradient(135deg, #111 0%, #0a0a18 100%); border: 1px solid #f59e0b33; border-radius: 12px; padding: 16px; }
+  .share-header { font-size: 10px; color: #f59e0b; font-weight: 700; margin-bottom: 10px; letter-spacing: .05em; }
+  .share-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .share-item { text-align: center; }
+  .share-item-label { font-size: 9px; color: #52525b; margin-bottom: 2px; }
+  .share-item-val { font-size: 14px; font-weight: 700; font-family: monospace; }
+  .share-item-val.green { color: #4ade80; }
+  .share-item-val.red { color: #f87171; }
+  .share-summary { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1a1a1a; font-size: 11px; color: #71717a; text-align: center; }
+  .share-btn { margin-top: 10px; background: #f59e0b; color: #000; border-radius: 8px; padding: 9px; text-align: center; font-weight: 700; font-size: 12px; }
+
+  .controls { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-next { flex: 1; background: #f59e0b; color: #000; border-radius: 8px; padding: 10px; text-align: center; font-weight: 700; font-size: 13px; }
+  .btn-auto { background: #1a1a1a; color: #a1a1aa; border-radius: 8px; padding: 10px 14px; font-size: 12px; }
+
+  .phase-nav { display: flex; gap: 6px; margin-bottom: 20px; }
+  .phase-pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .phase-pill.active { background: #f59e0b; color: #000; }
+  .phase-pill.inactive { background: #1a1a1a; color: #52525b; }
+
+  .progress-bar { background: #1a1a1a; height: 4px; border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
+  .progress-fill { background: #f59e0b; height: 100%; border-radius: 2px; width: 60%; transition: width .7s; }
+
+  .timeline { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 12px; }
+  .timeline-dot { padding: 6px 4px; border-radius: 6px; text-align: center; font-size: 11px; font-family: monospace; }
+  .timeline-dot.done { background: #292310; color: #f59e0b; }
+  .timeline-dot.current { background: #f59e0b; color: #000; font-weight: 700; }
+  .timeline-dot.future { background: #111; color: #3f3f46; }
+</style>
+</head>
+<body>
+<h1>CarSimulator Pro — повний дизайн</h1>
+<p class="sub">Прокрути вниз щоб побачити всі екрани: Setup → Playing → Verdict</p>
+
+<!-- SETUP -->
+<div class="section">
+  <div class="section-title">1. SETUP ЕКРАН</div>
+  <div class="setup-grid">
+    <div class="car-form">
+      <div class="car-label">🚗 МОЄ АВТО</div>
+      <div class="mock-field-row">
+        <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">Toyota</div>
+        <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">Camry</div>
+      </div>
+      <div class="mock-field-row">
+        <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">2017</div>
+        <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">95 000 км</div>
+      </div>
+      <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">$14 000</div>
+      <div class="btn-main">🔮 Симулювати</div>
+    </div>
+    <div>
+      <div class="rival-cta" style="border-radius:12px;padding:20px">
+        <div style="font-size:22px;margin-bottom:8px">⚔️</div>
+        <div>Порівняти з іншим авто</div>
+        <div style="font-size:11px;color:#52525b;margin-top:4px">Необов'язково — симулюй дуель</div>
+      </div>
+      <div class="car-form rival" style="margin-top:12px;opacity:0.5">
+        <div class="car-label">🚙 СУПЕРНИК</div>
+        <div class="mock-field-row">
+          <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">BMW</div>
+          <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">530d</div>
+        </div>
+        <div class="mock-field" style="display:flex;align-items:center;padding:0 10px;font-size:12px;color:#71717a">2016 · 140 000 км · $15 500</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYING -->
+<div class="section">
+  <div class="section-title">2. СИМУЛЯЦІЯ (рік 3 з 5)</div>
+
+  <div class="progress-bar"><div class="progress-fill"></div></div>
+
+  <div class="split">
+    <div class="car-col">
+      <div class="car-name">🚗 TOYOTA CAMRY 2017</div>
+      <div class="price-big">$10,640</div>
+      <div class="stat-row">
+        <div class="stat-label"><span>🔧 Двигун</span><span style="color:#22c55e">72</span></div>
+        <div class="stat-bar"><div class="stat-fill" style="width:72%;background:#22c55e"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label"><span>⚙️ Коробка</span><span style="color:#22c55e">78</span></div>
+        <div class="stat-bar"><div class="stat-fill" style="width:78%;background:#22c55e"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label"><span>🚗 Кузов</span><span style="color:#22c55e">81</span></div>
+        <div class="stat-bar"><div class="stat-fill" style="width:81%;background:#22c55e"></div></div>
+      </div>
+      <div class="stress-row">
+        <div class="stress-label"><span>😤 Нерви</span><span>32/100</span></div>
+        <div class="stress-bar"><div class="stress-fill" style="width:32%"></div></div>
+      </div>
+      <div class="year-cost">−$1,280 цього року</div>
+    </div>
+    <div class="car-col rival-col">
+      <div class="car-name">🚙 BMW 530d 2016</div>
+      <div class="price-big">$9,200</div>
+      <div class="stat-row">
+        <div class="stat-label"><span>🔧 Двигун</span><span style="color:#f59e0b">51</span></div>
+        <div class="stat-bar"><div class="stat-fill" style="width:51%;background:#f59e0b"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label"><span>⚙️ Коробка</span><span style="color:#f97316">43</span></div>
+        <div class="stat-bar"><div class="stat-fill" style="width:43%;background:#f97316"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label"><span>🚗 Кузов</span><span style="color:#f59e0b">59</span></div>
+        <div class="stat-bar"><div class="stat-fill" style="width:59%;background:#f59e0b"></div></div>
+      </div>
+      <div class="stress-row">
+        <div class="stress-label"><span>😤 Нерви</span><span style="color:#ef4444">71/100</span></div>
+        <div class="stress-bar"><div class="stress-fill" style="width:71%"></div></div>
+      </div>
+      <div class="year-cost">−$3,940 цього року 😬</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="btn-next">Рік 4 →</div>
+    <div class="btn-auto">▶ Авто</div>
+    <div class="btn-auto">2×</div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+    <div class="timeline-dot done">🛒</div>
+    <div class="timeline-dot done">1р</div>
+    <div class="timeline-dot done">2р</div>
+    <div class="timeline-dot current">3р</div>
+    <div class="timeline-dot future">4р</div>
+    <div class="timeline-dot future">5р</div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="section">
+  <div class="section-title">3. RUNNING LOG (обидва авто)</div>
+  <div class="log-panel">
+    <div class="log-entry">
+      <div class="log-year">01</div>
+      <div class="log-icon">🔋</div>
+      <div class="log-text">Акумулятор в мороз</div>
+      <div class="log-car-badge car1">Camry</div>
+      <div class="log-cost">−$160</div>
+    </div>
+    <div class="log-entry">
+      <div class="log-year">01</div>
+      <div class="log-icon">🛢</div>
+      <div class="log-text">Сажовий фільтр DPF забитий</div>
+      <div class="log-car-badge car2">BMW</div>
+      <div class="log-cost">−$680</div>
+    </div>
+    <div class="log-entry">
+      <div class="log-year">02</div>
+      <div class="log-icon">🛑</div>
+      <div class="log-text">Гальмівні колодки передні</div>
+      <div class="log-car-badge car1">Camry</div>
+      <div class="log-cost">−$280</div>
+    </div>
+    <div class="log-entry">
+      <div class="log-year">02</div>
+      <div class="log-icon">⚙️</div>
+      <div class="log-text">АКПП глючить — діагностика + ремонт</div>
+      <div class="log-car-badge car2">BMW</div>
+      <div class="log-cost" style="color:#ef4444;font-weight:700">−$2,100</div>
+    </div>
+    <div class="log-entry">
+      <div class="log-year">03</div>
+      <div class="log-icon">💨</div>
+      <div class="log-text">Амортизатори передні (пара)</div>
+      <div class="log-car-badge car1">Camry</div>
+      <div class="log-cost">−$460</div>
+    </div>
+    <div class="log-entry">
+      <div class="log-year">03</div>
+      <div class="log-icon">💀</div>
+      <div class="log-text">Турбіна здохла. Ремонт або продавай.</div>
+      <div class="log-car-badge car2">BMW</div>
+      <div class="log-cost" style="color:#ef4444;font-weight:700">−$3,200</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<div class="section">
+  <div class="section-title">4. ГРАФІК ЦІНИ ПО РОКАХ</div>
+  <div class="chart-panel">
+    <div class="chart-title">Вартість авто — Toyota (amber) vs BMW (indigo)</div>
+    <svg viewBox="0 0 320 100" style="width:100%;height:120px">
+      <!-- Grid lines -->
+      <line x1="0" y1="20" x2="320" y2="20" stroke="#1a1a1a" stroke-width="1"/>
+      <line x1="0" y1="50" x2="320" y2="50" stroke="#1a1a1a" stroke-width="1"/>
+      <line x1="0" y1="80" x2="320" y2="80" stroke="#1a1a1a" stroke-width="1"/>
+      <!-- Toyota line -->
+      <polyline points="0,15 64,28 128,40 192,50 256,58 320,65" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linejoin="round"/>
+      <!-- BMW line -->
+      <polyline points="0,18 64,35 128,55 192,72 256,82 320,88" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="5,2"/>
+      <!-- Event dots BMW -->
+      <circle cx="64" cy="35" r="5" fill="#ef4444" opacity="0.8"/>
+      <circle cx="128" cy="55" r="5" fill="#ef4444" opacity="0.8"/>
+      <circle cx="192" cy="72" r="7" fill="#ef4444" opacity="0.9"/>
+      <!-- Labels -->
+      <text x="4" y="12" font-size="9" fill="#52525b">$14k</text>
+      <text x="4" y="95" font-size="9" fill="#52525b">$5k</text>
+      <text x="0" y="108" font-size="9" fill="#f59e0b">— Toyota</text>
+      <text x="80" y="108" font-size="9" fill="#818cf8">-- BMW</text>
+      <text x="160" y="108" font-size="9" fill="#ef4444">● великий ремонт</text>
+    </svg>
+  </div>
+</div>
+
+<!-- GAMEOVER -->
+<div class="section">
+  <div class="section-title">5. GAME-OVER (якщо нерви = 100)</div>
+  <div style="background:#0a0a0a;border-radius:12px;overflow:hidden">
+    <div class="car-col rival-col" style="padding:16px">
+      <div class="car-name" style="opacity:0.5">🚙 BMW 530d — ВИБУВ</div>
+      <div class="gameover-banner">
+        <div class="gameover-emoji">💀</div>
+        <div class="gameover-text">
+          <strong>Власник не витримав — продав на 4-му році</strong>
+          За 4 роки витрачено $11,400 на ремонти при вартості авто $8,100. Нерви на межі.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VERDICT -->
+<div class="section">
+  <div class="section-title">6. ФІНАЛЬНИЙ ВЕРДИКТ</div>
+  <div class="verdict-grid">
+    <div class="verdict-card winner">
+      <div class="verdict-badge">🏆 ПЕРЕМОЖЕЦЬ</div>
+      <div class="verdict-make">Toyota Camry 2017</div>
+      <div class="verdict-cost">$187/міс</div>
+      <div class="verdict-sub">реальна вартість використання</div>
+      <div style="margin-top:10px;font-size:11px;color:#4ade80">Двигун 58 · Нерви 45</div>
+    </div>
+    <div class="verdict-card loser">
+      <div class="verdict-badge">💸 ДОРОЖЧЕ</div>
+      <div class="verdict-make">BMW 530d 2016</div>
+      <div class="verdict-cost">$541/міс</div>
+      <div class="verdict-sub">продав на 4-му році від нервів</div>
+      <div style="margin-top:10px;font-size:11px;color:#f87171">Двигун 34 · Нерви 100 💀</div>
+    </div>
+  </div>
+  <div class="verdict-diff">
+    <div class="verdict-diff-num">$21,360</div>
+    <div class="verdict-diff-label">на стільки BMW коштував дорожче за 5 років</div>
+  </div>
+</div>
+
+<!-- SHARE -->
+<div class="section">
+  <div class="section-title">7. SHARE КАРТКА</div>
+  <div class="share-card">
+    <div class="share-header">🚗 FREECARTOP · 5-РІЧНА ДУЕЛЬ</div>
+    <div class="share-row">
+      <div class="share-item">
+        <div class="share-item-label">🏆 Переможець</div>
+        <div class="share-item-val green">Toyota Camry</div>
+      </div>
+      <div class="share-item">
+        <div class="share-item-label">vs</div>
+        <div style="font-size:20px;color:#52525b">⚔️</div>
+      </div>
+      <div class="share-item">
+        <div class="share-item-label">💸 Програв</div>
+        <div class="share-item-val red">BMW 530d</div>
+      </div>
+    </div>
+    <div class="share-row" style="margin-top:8px">
+      <div class="share-item">
+        <div class="share-item-label">$/міс</div>
+        <div class="share-item-val green">$187</div>
+      </div>
+      <div class="share-item">
+        <div class="share-item-label">різниця за 5р</div>
+        <div class="share-item-val" style="color:#f59e0b">$21,360</div>
+      </div>
+      <div class="share-item">
+        <div class="share-item-label">$/міс</div>
+        <div class="share-item-val red">$541</div>
+      </div>
+    </div>
+    <div class="share-summary">BMW продали на 4-му році — нерви не витримали 😅<br/>Перевір своє авто на freecartop.vercel.app</div>
+    <div class="share-btn">📱 Поділитись результатом</div>
+  </div>
+</div>
+
+</body>
+</html>

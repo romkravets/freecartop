@@ -1,7 +1,7 @@
 'use client';
 
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Info, Loader2, Share2 } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, Check, ChevronDown, ChevronUp, ExternalLink, Info, Loader2, Search, Share2, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { IMPORT_OPTIONS } from '../lib/analyzer';
 
 // ── Score Ring ────────────────────────────────────────────────
@@ -78,7 +78,8 @@ function ShareButton({ text }) {
   const [copied, setCopied] = useState(false);
   const handle = async () => {
     if (navigator.share) {
-      try { await navigator.share({ text }); return; } catch {}
+      try { await navigator.share({ text }); return; }
+      catch (e) { if (e?.name === 'AbortError') return; }
     }
     await navigator.clipboard.writeText(text);
     setCopied(true);
@@ -162,6 +163,127 @@ function parseAutoRiaUrl(url) {
     }
   } catch {}
   return {};
+}
+
+// ── VIN Inspector Panel ───────────────────────────────────────
+function VinInspectorPanel({ result }) {
+  const { nhtsa, auctions, links } = result;
+
+  const AuctionBadge = ({ label, data, link }) => {
+    let color, icon, text;
+    if (data?.found === true)  { color = 'border-red-700 bg-red-950/40 text-red-400'; icon = '🚨'; text = 'ЗНАЙДЕНО'; }
+    else if (data?.found === false) { color = 'border-green-700 bg-green-950/30 text-green-400'; icon = '✅'; text = 'не знайдено'; }
+    else { color = 'border-zinc-700 bg-zinc-900/50 text-zinc-400'; icon = '❓'; text = data?.error ? 'недоступно' : 'перевірте'; }
+    return (
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold ${color}`}>
+        <span>{icon}</span>
+        <span className="font-bold">{label}:</span>
+        <span>{text}</span>
+        {data?.lotNumber && <span className="opacity-70">лот #{data.lotNumber}</span>}
+        <a href={link} target="_blank" rel="noopener noreferrer"
+          className="ml-auto opacity-50 hover:opacity-100 transition-opacity">
+          <ExternalLink size={11} />
+        </a>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-zinc-900/60 border border-amber-800/40 rounded-2xl p-4 space-y-3 animate-slide-up">
+      <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">🤖 Робот-інспектор</p>
+
+      {/* NHTSA data */}
+      {nhtsa && (
+        <div className="bg-zinc-800/50 rounded-xl p-3 space-y-1.5">
+          <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">NHTSA США</p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            {[
+              ['Марка', nhtsa.make],
+              ['Модель', nhtsa.model],
+              ['Рік', nhtsa.year],
+              ['Кузов', nhtsa.bodyClass],
+              ['Пальне', nhtsa.fuel],
+              ['Двигун', nhtsa.engine ? `${nhtsa.engine}${nhtsa.cylinders ? ' ' + nhtsa.cylinders + 'цил.' : ''}` : null],
+              ['Привід', nhtsa.driveType],
+              ['Де зроблено', nhtsa.plant],
+            ].filter(([, v]) => v).map(([k, v]) => (
+              <div key={k} className="flex gap-1.5">
+                <span className="text-[11px] text-gray-500 flex-shrink-0">{k}:</span>
+                <span className="text-[11px] text-gray-200 font-medium truncate">{v}</span>
+              </div>
+            ))}
+          </div>
+          {nhtsa.hasError && (
+            <p className="text-[10px] text-amber-400">⚠️ VIN частково нерозпізнаний NHTSA</p>
+          )}
+        </div>
+      )}
+      {!nhtsa && (
+        <p className="text-xs text-gray-500">NHTSA: дані не отримані (VIN може бути не американським)</p>
+      )}
+
+      {/* Auction checks */}
+      <div className="space-y-1.5">
+        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Страхові аукціони</p>
+        <AuctionBadge label="Copart" data={auctions.copart} link={links.copart} />
+        <AuctionBadge label="IAAI"   data={auctions.iaai}   link={links.iaai}   />
+        {(auctions.copart?.found === true || auctions.iaai?.found === true) && (
+          <div className="flex gap-2 bg-red-950/40 border border-red-800 rounded-lg p-2.5">
+            <AlertTriangle size={13} className="text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-red-300">
+              Авто знайдено на страховому аукціоні США — висока ймовірність тотальної аварії або катастрофічних пошкоджень
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Quick links */}
+      <div className="flex flex-wrap gap-2 pt-1">
+        {[
+          { label: 'CarFax', href: links.carfax },
+          { label: 'AutoRIA', href: links.autoRia },
+        ].map(({ label, href }) => (
+          <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 hover:border-amber-600 hover:text-amber-400 transition-all">
+            {label} <ExternalLink size={10} />
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Photo Analysis Card ───────────────────────────────────────
+function PhotoAnalysisCard({ analysis, onClose }) {
+  const grade = analysis.overallGrade ?? 0;
+  const gradeColor = grade >= 7 ? '#22c55e' : grade >= 5 ? '#f59e0b' : '#ef4444';
+  return (
+    <div className="bg-zinc-900/60 border border-zinc-700 rounded-xl p-3 space-y-2 animate-slide-up">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold text-gray-300">📸 Аналіз фото</p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold" style={{ color: gradeColor }}>{grade}/10</span>
+          <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+            <X size={13} />
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-gray-300">{analysis.exteriorCondition}</p>
+      {analysis.rustSigns && analysis.rustSigns !== 'не виявлено' && (
+        <p className="text-xs text-amber-300">🔴 Іржа: {analysis.rustSigns}</p>
+      )}
+      {analysis.redFlags?.length > 0 && (
+        <div className="space-y-0.5">
+          {analysis.redFlags.map((f, i) => (
+            <p key={i} className="text-xs text-red-400">⚠️ {f}</p>
+          ))}
+        </div>
+      )}
+      {analysis.checkInPerson && (
+        <p className="text-xs text-blue-300">🔍 {analysis.checkInPerson}</p>
+      )}
+    </div>
+  );
 }
 
 // ── Verdict background ────────────────────────────────────────
@@ -259,6 +381,22 @@ export default function AIAnalyzer() {
   const [weeksOnSale, setWeeksOnSale ] = useState('');
   const [vinChecked,  setVinChecked  ] = useState(false);
 
+  // VIN Inspector
+  const [vin,            setVin          ] = useState('');
+  const [vinResult,      setVinResult    ] = useState(null);
+  const [vinLoading,     setVinLoading   ] = useState(false);
+  const [vinError,       setVinError     ] = useState('');
+  // VIN Report paste
+  const [vinReport,      setVinReport    ] = useState('');
+  const [showVinReport,  setShowVinReport] = useState(false);
+  // Photo
+  const photoInputRef = useRef(null);
+  const [photoPreview,   setPhotoPreview  ] = useState(null);
+  const [photoBase64,    setPhotoBase64   ] = useState(null);
+  const [photoMediaType, setPhotoMediaType] = useState('image/jpeg');
+  const [photoAnalysis,  setPhotoAnalysis ] = useState(null);
+  const [photoAnalyzing, setPhotoAnalyzing] = useState(false);
+
   const [loading,  setLoading ] = useState(false);
   const [result,   setResult  ] = useState(null);
   const [error,    setError   ] = useState('');
@@ -269,6 +407,68 @@ export default function AIAnalyzer() {
     const parsed = parseAutoRiaUrl(val);
     if (parsed.make && !make)  setMake(parsed.make);
     if (parsed.model && !model) setModel(parsed.model);
+  };
+
+  // VIN check via NHTSA + Copart/IAAI
+  const handleVinCheck = async () => {
+    const v = vin.trim().toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
+    if (v.length !== 17) { setVinError('VIN має бути рівно 17 символів'); return; }
+    setVinLoading(true);
+    setVinResult(null);
+    setVinError('');
+    try {
+      const res  = await fetch(`/api/vin-check?vin=${v}`);
+      const data = await res.json();
+      if (data.ok) {
+        setVinResult(data);
+        const n = data.nhtsa;
+        if (n?.make  && !make)  setMake(n.make.charAt(0).toUpperCase() + n.make.slice(1).toLowerCase());
+        if (n?.model && !model) setModel(n.model);
+        if (n?.year  && !year)  setYear(n.year);
+      } else {
+        setVinError(data.message || 'Помилка перевірки VIN');
+      }
+    } catch {
+      setVinError('Помилка зʼєднання при перевірці VIN');
+    } finally {
+      setVinLoading(false);
+    }
+  };
+
+  // Photo upload
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { setError('Фото занадто велике. Максимум 3MB.'); return; }
+    const mt = file.type || 'image/jpeg';
+    setPhotoMediaType(mt);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target.result;
+      setPhotoPreview(url);
+      setPhotoBase64(url.split(',')[1]);
+      setPhotoAnalysis(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoAnalyze = async () => {
+    if (!photoBase64) return;
+    setPhotoAnalyzing(true);
+    try {
+      const res  = await fetch('/api/photo-analyze', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ imageBase64: photoBase64, mediaType: photoMediaType, make, model, year }),
+      });
+      const data = await res.json();
+      if (data.ok) setPhotoAnalysis(data.analysis);
+      else setError('Помилка аналізу фото. Спробуй ще раз.');
+    } catch {
+      setError('Помилка зʼєднання при аналізі фото');
+    } finally {
+      setPhotoAnalyzing(false);
+    }
   };
 
   const canSubmit = year && claimedKm && !loading;
@@ -285,6 +485,11 @@ export default function AIAnalyzer() {
           make, model, year, claimedMileage: claimedKm, prevMileage: prevKm,
           owners, importCountry: importCntry, fuelType, body,
           priceAsked, marketPrice, weeksOnSale, fastReReg, vinChecked, listingUrl,
+          vin: vin.trim(),
+          vinReport: vinReport.slice(0, 3000),
+          nhtsaData:    vinResult?.nhtsa    ?? null,
+          auctionData:  vinResult?.auctions ?? null,
+          photoAnalysis: photoAnalysis ?? null,
         }),
       });
       const data = await res.json();
@@ -333,6 +538,62 @@ export default function AIAnalyzer() {
             </div>
             <TextInput value={listingUrl} onChange={handleUrlChange}
               placeholder="https://auto.ria.com/uk/auto_bmw_x6_35123456.html" />
+          </div>
+
+          {/* VIN Inspector */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">🔍</span>
+              <div>
+                <h3 className="text-sm font-bold text-gray-200">VIN-інспектор</h3>
+                <p className="text-xs text-gray-500">NHTSA декодування + перевірка Copart/IAAI. Автозаповнює марку/модель/рік</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={vin}
+                onChange={e => { setVin(e.target.value.toUpperCase()); setVinError(''); setVinResult(null); }}
+                onKeyDown={e => e.key === 'Enter' && handleVinCheck()}
+                placeholder="1HGBH41JXMN109186"
+                maxLength={17}
+                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 font-mono tracking-widest uppercase"
+              />
+              <button
+                onClick={handleVinCheck}
+                disabled={vinLoading || vin.replace(/[^A-HJ-NPR-Z0-9]/gi,'').length !== 17}
+                className="px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-bold text-sm transition-all flex items-center gap-1.5 flex-shrink-0">
+                {vinLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                {vinLoading ? 'Перевіряю…' : 'Перевірити'}
+              </button>
+            </div>
+            {vinError && (
+              <p className="text-xs text-red-400 flex items-center gap-1.5">
+                <AlertTriangle size={12} /> {vinError}
+              </p>
+            )}
+            {vinResult && <VinInspectorPanel result={vinResult} />}
+
+            {/* VIN Report paste toggle */}
+            <button
+              onClick={() => setShowVinReport(v => !v)}
+              className="flex items-center gap-2 text-xs text-gray-500 hover:text-amber-400 transition-colors">
+              {showVinReport ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              Вставити дані з VIN-звіту (CarVertical / AutoRIA / CarFax)
+            </button>
+            {showVinReport && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-gray-500">Вставте текст зі звіту. AI врахує ці дані в аналізі.</p>
+                <textarea
+                  value={vinReport}
+                  onChange={e => setVinReport(e.target.value)}
+                  placeholder="Вставте текст звіту тут..."
+                  rows={5}
+                  className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 resize-y"
+                />
+                <p className="text-right text-[10px] text-gray-600">{vinReport.length}/3000</p>
+              </div>
+            )}
           </div>
 
           {/* Basic */}
@@ -430,9 +691,62 @@ export default function AIAnalyzer() {
             </Field>
           </div>
 
-          {/* VIN */}
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+          {/* VIN checked toggle */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex items-center justify-between">
             <Toggle value={vinChecked} onChange={setVinChecked} label="VIN перевірено (carvertical / auto.ria)" />
+          </div>
+
+          {/* Photo upload */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">📸</span>
+              <div>
+                <h3 className="text-sm font-bold text-gray-200">Фото авто</h3>
+                <p className="text-xs text-gray-500">AI оцінить стан кузова, фарби та іржу по фото</p>
+              </div>
+            </div>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+            {!photoPreview ? (
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-zinc-700 hover:border-amber-600 rounded-xl p-6 flex flex-col items-center gap-2 transition-all group">
+                <Upload size={22} className="text-zinc-600 group-hover:text-amber-500 transition-colors" />
+                <span className="text-xs text-zinc-500 group-hover:text-zinc-300 transition-colors">Натисни щоб додати фото (до 3MB)</span>
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <div className="relative rounded-xl overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoPreview} alt="Car photo" className="w-full max-h-48 object-cover" />
+                  <button
+                    onClick={() => { setPhotoPreview(null); setPhotoBase64(null); setPhotoAnalysis(null); if (photoInputRef.current) photoInputRef.current.value = ''; }}
+                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-all">
+                    <X size={14} />
+                  </button>
+                </div>
+                {!photoAnalysis ? (
+                  <button
+                    onClick={handlePhotoAnalyze}
+                    disabled={photoAnalyzing}
+                    className="w-full py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-sm text-zinc-300 font-semibold transition-all flex items-center justify-center gap-2">
+                    {photoAnalyzing ? <><Loader2 size={14} className="animate-spin" /> Аналізую фото…</> : '🤖 Аналізувати фото'}
+                  </button>
+                ) : (
+                  <PhotoAnalysisCard analysis={photoAnalysis} onClose={() => setPhotoAnalysis(null)} />
+                )}
+                <button
+                  onClick={() => photoInputRef.current?.click()}
+                  className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
+                  Замінити фото
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Submit */}

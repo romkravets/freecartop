@@ -1,0 +1,80 @@
+<h2>Як запускати порівняння двох авто?</h2>
+<p class="subtitle">Від цього залежить весь UX setup-екрану</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Паралельне налаштування</h3>
+      <p>Юзер бачить дві колонки одразу — заповнює обидва авто, тоді натискає "Симулювати обидва"</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Setup Screen</div>
+        <div class="mockup-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px">
+          <div style="background:#1a1a1a;border-radius:8px;padding:12px;border:1px solid #333">
+            <div style="font-size:11px;color:#f59e0b;font-weight:bold;margin-bottom:8px">🚗 АВТО 1</div>
+            <div style="background:#252525;height:20px;border-radius:4px;margin-bottom:6px"></div>
+            <div style="background:#252525;height:20px;border-radius:4px;margin-bottom:6px"></div>
+            <div style="background:#252525;height:20px;border-radius:4px"></div>
+          </div>
+          <div style="background:#1a1a1a;border-radius:8px;padding:12px;border:1px solid #333">
+            <div style="font-size:11px;color:#818cf8;font-weight:bold;margin-bottom:8px">🚙 АВТО 2</div>
+            <div style="background:#252525;height:20px;border-radius:4px;margin-bottom:6px"></div>
+            <div style="background:#252525;height:20px;border-radius:4px;margin-bottom:6px"></div>
+            <div style="background:#252525;height:20px;border-radius:4px"></div>
+          </div>
+        </div>
+        <div style="padding:0 12px 12px">
+          <div style="background:#f59e0b;color:#000;text-align:center;border-radius:6px;padding:8px;font-size:12px;font-weight:bold">⚡ Симулювати обидва</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#6b7280">Плюс: все видно одразу. Мінус: setup-форма стає дуже широкою на мобільному</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Послідовне + "додати суперника"</h3>
+      <p>Спочатку звичайний setup одного авто. Після заповнення — кнопка "⚔️ Порівняти з іншим авто". Тоді з'являється друга форма.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Setup Screen</div>
+        <div class="mockup-body" style="padding:12px">
+          <div style="background:#1a1a1a;border-radius:8px;padding:12px;border:1px solid #f59e0b33;margin-bottom:10px">
+            <div style="font-size:11px;color:#f59e0b;font-weight:bold;margin-bottom:8px">🚗 Моє авто</div>
+            <div style="background:#252525;height:18px;border-radius:4px;margin-bottom:5px"></div>
+            <div style="background:#252525;height:18px;border-radius:4px"></div>
+          </div>
+          <div style="background:#1a1a2a;border-radius:8px;padding:12px;border:1px dashed #818cf860">
+            <div style="font-size:11px;color:#818cf8;font-weight:bold;margin-bottom:8px">⚔️ + Додати суперника</div>
+            <div style="background:#252525;height:18px;border-radius:4px;margin-bottom:5px;opacity:0.4"></div>
+            <div style="background:#252525;height:18px;border-radius:4px;opacity:0.4"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#6b7280">Плюс: мобільно-friendly, можна симулювати і одне авто. Мінус: трохи більше кроків</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Вкладки-switcher</h3>
+      <p>Одна форма з табами "Авто 1" / "Авто 2". Перемикаєшся між ними як між вкладками браузера.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Setup Screen</div>
+        <div class="mockup-body" style="padding:12px">
+          <div style="display:flex;gap:4px;margin-bottom:10px">
+            <div style="flex:1;background:#f59e0b;color:#000;border-radius:6px;padding:7px;text-align:center;font-size:12px;font-weight:bold">🚗 Авто 1</div>
+            <div style="flex:1;background:#252525;color:#555;border-radius:6px;padding:7px;text-align:center;font-size:12px">🚙 Авто 2</div>
+          </div>
+          <div style="background:#1a1a1a;border-radius:8px;padding:12px;border:1px solid #333">
+            <div style="background:#252525;height:18px;border-radius:4px;margin-bottom:6px"></div>
+            <div style="background:#252525;height:18px;border-radius:4px;margin-bottom:6px"></div>
+            <div style="background:#252525;height:18px;border-radius:4px"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#6b7280">Плюс: компактно, однакова UX для обох. Мінус: не видно обидва одночасно</div>
+    </div>
+  </div>
+</div>

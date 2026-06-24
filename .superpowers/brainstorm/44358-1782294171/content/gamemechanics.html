@@ -1,0 +1,89 @@
+<h2>Які game-механіки додаємо?</h2>
+<p class="subtitle">Що робить симулятор справді цікавим — обери всі що хочеш</p>
+
+<div class="options" data-multiselect>
+
+  <div class="option" data-choice="stress" onclick="toggleSelect(this)">
+    <div class="letter">😤</div>
+    <div class="content">
+      <h3>Метрика "Нерви власника"</h3>
+      <p>Росте від кожного дорогого ремонту. Якщо досягає 100 — власник "здається" і продає авто достроково. Як mood у zhytye.</p>
+      <div style="margin-top:8px;background:#1a1a1a;border-radius:6px;padding:8px">
+        <div style="font-size:10px;color:#f59e0b;margin-bottom:4px">😤 Нерви: 78/100</div>
+        <div style="background:#252525;height:6px;border-radius:3px;overflow:hidden"><div style="background:#ef4444;width:78%;height:100%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="gameover" onclick="toggleSelect(this)">
+    <div class="letter">💀</div>
+    <div class="content">
+      <h3>Game-over умови</h3>
+      <p>Авто "вибуває" якщо: нерви 100% → продав, або двигун &lt; 15 → тоталь, або ремонти &gt; 70% вартості → здав на металобрухт</p>
+      <div style="margin-top:8px;background:#1a0a0a;border:1px solid #7f1d1d;border-radius:6px;padding:8px;font-size:12px;color:#fca5a5">
+        💀 BMW 5 Series — здано на металобрухт на 4-му році.<br/>Ремонти з'їли $8,400 при вартості авто $9,200
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="log" onclick="toggleSelect(this)">
+    <div class="letter">📋</div>
+    <div class="content">
+      <h3>Running log всіх подій</h3>
+      <p>Прокрутна стрічка всіх подій по роках — як бортовий журнал авто. Кожна запис: рік, подія, ціна, вплив.</p>
+      <div style="margin-top:8px;background:#0a0a0a;border-radius:6px;padding:8px;font-family:monospace;font-size:11px">
+        <div style="color:#555;margin-bottom:4px">01р · 🔋 Акумулятор в мороз · <span style="color:#ef4444">−$160</span></div>
+        <div style="color:#555;margin-bottom:4px">02р · 🛑 Гальма (передні) · <span style="color:#ef4444">−$280</span></div>
+        <div style="color:#f59e0b">03р · ⚙️ DSG глючить · <span style="color:#ef4444">−$1,800</span> 😬</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="chart" onclick="toggleSelect(this)">
+    <div class="letter">📈</div>
+    <div class="content">
+      <h3>Графік ціни авто по роках</h3>
+      <p>SVG-лінія що малюється під час симуляції — видно як депресіює вартість і де були великі витрати.</p>
+      <div style="margin-top:8px;background:#0a0a0a;border-radius:6px;padding:8px">
+        <svg viewBox="0 0 200 60" style="width:100%;height:60px">
+          <polyline points="0,10 40,20 80,32 120,48 160,50 200,55" fill="none" stroke="#f59e0b" stroke-width="2"/>
+          <polyline points="0,10 40,25 80,45 120,52 160,55" fill="none" stroke="#818cf8" stroke-width="2" stroke-dasharray="4,2"/>
+          <circle cx="80" cy="45" r="4" fill="#ef4444"/>
+          <text x="82" y="42" font-size="8" fill="#ef4444">DSG</text>
+        </svg>
+        <div style="display:flex;gap:12px;font-size:10px;margin-top:4px">
+          <span style="color:#f59e0b">— Toyota</span>
+          <span style="color:#818cf8">-- BMW</span>
+          <span style="color:#ef4444">● подія</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="share" onclick="toggleSelect(this)">
+    <div class="letter">📱</div>
+    <div class="content">
+      <h3>Share-картка результату</h3>
+      <p>Красива картка для соцмереж з підсумком: хто переміг, різниця у витратах, QR на сайт.</p>
+      <div style="margin-top:8px;background:linear-gradient(135deg,#1a1a0a,#0a1a0a);border-radius:8px;padding:12px;border:1px solid #f59e0b44">
+        <div style="font-size:10px;color:#f59e0b;font-weight:700;margin-bottom:6px">freecartop · 5-річна симуляція</div>
+        <div style="display:flex;justify-content:space-between">
+          <div style="font-size:11px;color:#4ade80">🏆 Toyota −$187/міс</div>
+          <div style="font-size:11px;color:#ef4444">💸 BMW −$541/міс</div>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:#6b7280">BMW коштував на $21,360 більше за 5 років</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="localstorage" onclick="toggleSelect(this)">
+    <div class="letter">💾</div>
+    <div class="content">
+      <h3>Збереження результатів</h3>
+      <p>localStorage зберігає останні 3 симуляції — можна повернутись і порівняти нові авто зі старими результатами.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:20px">Можна обрати кілька — натискай на всі що хочеш включити</p>

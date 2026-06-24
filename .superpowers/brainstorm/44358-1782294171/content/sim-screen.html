@@ -1,0 +1,94 @@
+<h2>Як виглядає екран симуляції двох авто?</h2>
+<p class="subtitle">Обидва авто симулюються паралельно — але як їх показувати?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Split-екран в реальному часі</h3>
+      <p>Два авто поряд, синхронна анімація по роках. Одразу видно хто "виграє"</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Year 3 of 5</div>
+        <div class="mockup-body" style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#333">
+          <div style="background:#0a0a0a;padding:12px">
+            <div style="font-size:11px;color:#f59e0b;font-weight:700;margin-bottom:8px">🚗 Toyota Camry</div>
+            <div style="font-size:18px;font-weight:900;color:#fff;font-family:monospace">$11,200</div>
+            <div style="margin-top:8px;font-size:10px;color:#555;margin-bottom:3px">Двигун</div>
+            <div style="background:#1a1a1a;height:6px;border-radius:3px;overflow:hidden"><div style="background:#22c55e;width:72%;height:100%"></div></div>
+            <div style="margin-top:5px;font-size:10px;color:#555;margin-bottom:3px">Кузов</div>
+            <div style="background:#1a1a1a;height:6px;border-radius:3px;overflow:hidden"><div style="background:#22c55e;width:80%;height:100%"></div></div>
+            <div style="margin-top:8px;font-size:10px;color:#ef4444">−$1,280 цього року</div>
+          </div>
+          <div style="background:#0a0a0a;padding:12px">
+            <div style="font-size:11px;color:#818cf8;font-weight:700;margin-bottom:8px">🚙 BMW 5 Series</div>
+            <div style="font-size:18px;font-weight:900;color:#fff;font-family:monospace">$9,800</div>
+            <div style="margin-top:8px;font-size:10px;color:#555;margin-bottom:3px">Двигун</div>
+            <div style="background:#1a1a1a;height:6px;border-radius:3px;overflow:hidden"><div style="background:#f59e0b;width:48%;height:100%"></div></div>
+            <div style="margin-top:5px;font-size:10px;color:#555;margin-bottom:3px">Кузов</div>
+            <div style="background:#1a1a1a;height:6px;border-radius:3px;overflow:hidden"><div style="background:#f97316;width:55%;height:100%"></div></div>
+            <div style="margin-top:8px;font-size:10px;color:#ef4444">−$3,940 цього року 😬</div>
+          </div>
+        </div>
+        <div style="padding:10px;display:flex;gap:6px">
+          <div style="flex:1;background:#f59e0b;color:#000;border-radius:5px;padding:7px;text-align:center;font-size:11px;font-weight:bold">Наступний рік →</div>
+          <div style="background:#1a1a1a;border-radius:5px;padding:7px;font-size:11px;color:#555">▶ Авто</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Фокус на одному + мінікарта другого</h3>
+      <p>Основний вид — одне авто (перемикається), зверху — компактний статус-бар другого</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Year 3 of 5</div>
+        <div class="mockup-body" style="padding:12px">
+          <div style="background:#1a1a2a;border-radius:6px;padding:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div>
+              <div style="font-size:10px;color:#818cf8;font-weight:700">🚙 BMW (суперник)</div>
+              <div style="font-size:13px;color:#fff;font-family:monospace">$9,800 · Двигун 48</div>
+            </div>
+            <div style="font-size:10px;color:#ef4444;background:#1a0a0a;padding:4px 8px;border-radius:4px">−$3,940</div>
+          </div>
+          <div style="background:#1a1a1a;border-radius:8px;padding:14px;border:1px solid #f59e0b44">
+            <div style="font-size:12px;color:#f59e0b;font-weight:700;margin-bottom:8px">🚗 Toyota Camry (ти)</div>
+            <div style="font-size:26px;font-weight:900;color:#fff;font-family:monospace">$11,200</div>
+            <div style="margin-top:10px;font-size:10px;color:#555;margin-bottom:3px">Двигун</div>
+            <div style="background:#252525;height:8px;border-radius:4px;overflow:hidden"><div style="background:#22c55e;width:72%;height:100%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Тільки вердикт порівнює — симуляція окрема</h3>
+      <p>Симулюємо авто послідовно (спочатку 1, потім 2), фінальний вердикт показує порівняння</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Final Verdict</div>
+        <div class="mockup-body" style="padding:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div style="background:#0d1a0d;border:1px solid #166534;border-radius:6px;padding:10px;text-align:center">
+              <div style="font-size:10px;color:#4ade80;font-weight:700">🏆 ПЕРЕМОЖЕЦЬ</div>
+              <div style="font-size:12px;color:#fff;font-weight:700;margin:4px 0">Toyota Camry</div>
+              <div style="font-size:18px;font-family:monospace;color:#4ade80">$187/міс</div>
+            </div>
+            <div style="background:#1a0d0d;border:1px solid #991b1b;border-radius:6px;padding:10px;text-align:center">
+              <div style="font-size:10px;color:#f87171;font-weight:700">💸 ДОРОЖЧЕ</div>
+              <div style="font-size:12px;color:#fff;font-weight:700;margin:4px 0">BMW 5 Series</div>
+              <div style="font-size:18px;font-family:monospace;color:#f87171">$541/міс</div>
+            </div>
+          </div>
+          <div style="background:#111;border-radius:6px;padding:8px;font-size:11px;color:#6b7280;text-align:center">
+            BMW коштував на $21,360 більше за 5 років 🤯
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#6b7280">Плюс: найпростіша реалізація. Мінус: немає "live race" відчуття</div>
+    </div>
+  </div>
+</div>

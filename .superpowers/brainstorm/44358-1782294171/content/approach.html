@@ -1,0 +1,52 @@
+<h2>Як далеко йдемо з CarSimulator?</h2>
+<p class="subtitle">Обери підхід — від нього залежить обсяг роботи і фінальний продукт</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Fix + Integrate</h3>
+      <p>Виправити 3 критичних баги → додати CarSimulator як 3-й таб в page.jsx → базова share-кнопка на вердикті</p>
+      <ul style="margin-top:10px;padding-left:16px;font-size:13px;opacity:0.7;line-height:1.8">
+        <li>Вердикт включає event costs</li>
+        <li>Health накопичується між роками</li>
+        <li>Таб "Симулятор" на сайті</li>
+        <li>~2–3 дні роботи</li>
+      </ul>
+      <div style="margin-top:10px;padding:6px 10px;background:#1a3a1a;border-radius:6px;font-size:12px;color:#4ade80">✅ Найшвидший шлях до живого продукту</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Car Life Game — повноцінна симуляція</h3>
+      <p>Все з варіанту A + нові механіки що роблять симулятор справді engaging</p>
+      <ul style="margin-top:10px;padding-left:16px;font-size:13px;opacity:0.7;line-height:1.8">
+        <li>🎯 Running log всіх подій по роках</li>
+        <li>💀 Game-over: "продав достроково" якщо ремонти &gt; 60% вартості</li>
+        <li>😰 Метрика "Нерви власника" — росте від дорогих ремонтів</li>
+        <li>📊 Фінансовий графік ціни авто по роках</li>
+        <li>📱 Share-картка результату (як у zhytye)</li>
+        <li>~1 тиждень роботи</li>
+      </ul>
+      <div style="margin-top:10px;padding:6px 10px;background:#2a2a0a;border-radius:6px;font-size:12px;color:#fbbf24">⭐ Рекомендую — максимальний WOW-ефект при реальному обсязі</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Car Life Game Pro — з порівнянням альтернатив</h3>
+      <p>Все з варіанту B + можливість симулювати 2 авто одночасно і порівняти</p>
+      <ul style="margin-top:10px;padding-left:16px;font-size:13px;opacity:0.7;line-height:1.8">
+        <li>🆚 "А що якби я купив Toyota замість BMW?"</li>
+        <li>📊 Порівняльний вердикт: реальна вартість обох</li>
+        <li>🎭 Події різні для кожного авто (AI генерує обидва)</li>
+        <li>💾 Зберігання результатів у localStorage</li>
+        <li>~2 тижні роботи</li>
+      </ul>
+      <div style="margin-top:10px;padding:6px 10px;background:#1a1a3a;border-radius:6px;font-size:12px;color:#818cf8">🚀 Унікально на ринку, але більший обсяг</div>
+    </div>
+  </div>
+</div>

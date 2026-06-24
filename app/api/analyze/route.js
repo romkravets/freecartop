@@ -38,11 +38,51 @@ function buildPrompt(data) {
     listingUrl,
     fuelType,
     body,
+    vin,
+    vinReport,
+    nhtsaData,
+    auctionData,
+    photoAnalysis,
   } = data;
 
   const currentYear = new Date().getFullYear();
   const carAge = currentYear - Number(year);
   const avgExpected = carAge * 15000;
+
+  // Build VIN Inspector section
+  let vinSection = '';
+  if (vin) {
+    vinSection += `\nVIN: ${vin}`;
+  }
+  if (nhtsaData) {
+    vinSection += `\nNHTSA декодування: ${nhtsaData.make || '?'} ${nhtsaData.model || '?'} ${nhtsaData.year || '?'} р., ${nhtsaData.bodyClass || '?'}, ${nhtsaData.fuel || '?'}, двигун ${nhtsaData.engine || '?'} ${nhtsaData.cylinders ? nhtsaData.cylinders + 'цил.' : ''}, виготовлено у ${nhtsaData.plant || '?'}`;
+    if (nhtsaData.hasError) vinSection += ' ⚠️ NHTSA повернув помилку декодування';
+  }
+  if (auctionData) {
+    const copart = auctionData.copart;
+    const iaai   = auctionData.iaai;
+    if (copart?.found === true)  vinSection += `\n🚨 ЗНАЙДЕНО НА COPART (страховий аукціон США)${copart.lotNumber ? ', лот #' + copart.lotNumber : ''}`;
+    if (copart?.found === false) vinSection += '\nCopart: не знайдено ✅';
+    if (iaai?.found === true)    vinSection += '\n🚨 ЗНАЙДЕНО НА IAAI (страховий аукціон США)';
+    if (iaai?.found === false)   vinSection += '\nIAAI: не знайдено ✅';
+  }
+
+  // Build photo analysis section
+  let photoSection = '';
+  if (photoAnalysis) {
+    photoSection = `\nАНАЛІЗ ФОТО (AI-огляд):
+- Стан кузова: ${photoAnalysis.exteriorCondition || '?'}
+- Іржа/корозія: ${photoAnalysis.rustSigns || '?'}
+- Оцінка по фото: ${photoAnalysis.overallGrade || '?'}/10
+${photoAnalysis.redFlags?.length ? '- Прапорці по фото: ' + photoAnalysis.redFlags.join('; ') : ''}
+- Що перевірити: ${photoAnalysis.checkInPerson || '?'}`;
+  }
+
+  // Build VIN report section
+  let vinReportSection = '';
+  if (vinReport && vinReport.trim().length > 10) {
+    vinReportSection = `\nДАНІ З VIN-ЗВІТУ (CarVertical/AutoRIA/CarFax):\n${vinReport.slice(0, 2000)}`;
+  }
 
   return `Ти — відомий в Україні автоексперт, який робить вірусні пости розборів оголошень у стилі Instagram. Твій стиль: прямий, іноді іронічний, з емодзі, але завжди по суті. Ти захищаєш покупців від шахраїв і перекупників.
 
@@ -59,8 +99,9 @@ function buildPrompt(data) {
 - VIN перевірено: ${vinChecked ? "так ✅" : "ні"}
 - Посилання: ${listingUrl || "не надано"}
 - Середній пробіг за вік авто (${carAge} р.): ~${avgExpected.toLocaleString("uk-UA")} км
+${vinSection}${photoSection}${vinReportSection}
 
-ЗАВДАННЯ: Зроби аналіз цього оголошення у твоєму фірмовому стилі.
+ЗАВДАННЯ: Зроби аналіз цього оголошення у твоєму фірмовому стилі. Врахуй ВСІ дані вище включаючи NHTSA, аукціони, фото та VIN-звіт якщо надані.
 
 Відповідь ОБОВ'ЯЗКОВО у такому JSON форматі (і тільки JSON, без markdown, без пояснень навколо):
 {
@@ -82,6 +123,8 @@ function buildPrompt(data) {
 - score 60-79 → "caution"
 - score 80+ → "safe"
 - Якщо prevMileage > claimedMileage — це ЗАВЖДИ critical flag і мінус мінімум 40 балів від score
+- Якщо VIN знайдено на Copart або IAAI — це ЗАВЖДИ critical flag "Страховий тотал!" і мінус мінімум 50 балів
+- Якщо NHTSA показує іншу марку/модель/рік ніж заявлено — це critical flag "Підміна документів"
 - Якщо ціна нижча за ринок > 20% — це теж підозріло (suspicious), не "добре"
 - Якщо авто продається > 1 рік — великий мінус
 - Будь чесним: якщо даних мало — кажи що треба додатково перевірити`;
@@ -106,9 +149,9 @@ export async function POST(req) {
     );
   }
 
-  // Body size guard (16KB max)
+  // Body size guard (64KB max — increased for VIN report text)
   const contentLength = req.headers.get("content-length");
-  if (contentLength && parseInt(contentLength, 10) > 16 * 1024) {
+  if (contentLength && parseInt(contentLength, 10) > 64 * 1024) {
     return NextResponse.json(
       { error: "Тіло запиту занадто велике" },
       { status: 413 },
@@ -160,20 +203,31 @@ export async function POST(req) {
     listingUrl: String(data.listingUrl || "").slice(0, 200),
     fuelType: String(data.fuelType || "").slice(0, 30),
     body: String(data.body || "").slice(0, 30),
+    // VIN Inspector data
+    vin: String(data.vin || "").replace(/[^A-HJ-NPR-Z0-9]/gi, "").slice(0, 17),
+    vinReport: String(data.vinReport || "").slice(0, 3000),
+    nhtsaData: data.nhtsaData && typeof data.nhtsaData === "object" ? data.nhtsaData : null,
+    auctionData: data.auctionData && typeof data.auctionData === "object" ? data.auctionData : null,
+    photoAnalysis: data.photoAnalysis && typeof data.photoAnalysis === "object" ? data.photoAnalysis : null,
   };
 
   // Call Claude
   try {
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
+      max_tokens: 1800,
       messages: [{ role: "user", content: buildPrompt(sanitized) }],
     });
 
     const raw = message.content[0]?.text ?? "";
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[/api/analyze] stop_reason:", message.stop_reason, "| len:", raw.length);
+      console.log("[/api/analyze] raw:", raw.slice(0, 500));
+    }
 
-    // Extract JSON from response
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    // Extract the outermost JSON object — strip markdown fences if present
+    const stripped = raw.replace(/```(?:json)?\s*/gi, "").replace(/```\s*/g, "");
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(
         { error: "AI не повернув коректний JSON. Спробуй ще раз." },
@@ -185,10 +239,19 @@ export async function POST(req) {
     try {
       result = JSON.parse(jsonMatch[0]);
     } catch {
-      return NextResponse.json(
-        { error: "Помилка парсингу відповіді AI." },
-        { status: 502 },
-      );
+      // Attempt to auto-repair common issues: trailing commas, cut-off arrays
+      try {
+        const repaired = jsonMatch[0]
+          .replace(/,\s*([}\]])/g, "$1")   // trailing commas
+          .replace(/([^\\])"(?=[^,}\]:\s])/g, '$1\\"'); // naive unescaped quote guard
+        result = JSON.parse(repaired);
+      } catch {
+        console.error("[/api/analyze] parse failed, raw:", raw.slice(0, 600));
+        return NextResponse.json(
+          { error: "Помилка парсингу відповіді AI. Спробуй ще раз." },
+          { status: 502 },
+        );
+      }
     }
 
     // Clamp score

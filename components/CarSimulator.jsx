@@ -310,9 +310,71 @@ function ProfileForm({ value, onChange, title, accent }) {
   const transData = TRANS_MOD[value.transmission];
   const makeData  = getMakeData(value.make);
 
+  const [urlInput,   setUrlInput  ] = useState('');
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlMsg,     setUrlMsg    ] = useState(null); // { ok, text }
+
+  const handleUrlLoad = async () => {
+    const u = urlInput.trim();
+    if (!u.startsWith('http')) return;
+    setUrlLoading(true);
+    setUrlMsg(null);
+    try {
+      const res  = await fetch(`/api/listing-parse?url=${encodeURIComponent(u)}`);
+      const data = await res.json();
+      if (data.ok && data.found) {
+        const c = data.car;
+        const patch = {};
+        if (c.make)         patch.make         = c.make;
+        if (c.model)        patch.model        = c.model;
+        if (c.year)         patch.year         = c.year;
+        if (c.mileage)      patch.mileage      = c.mileage;
+        if (c.price)        patch.price        = c.price;
+        if (c.fuel)         patch.fuel         = c.fuel;
+        if (c.body)         patch.body         = c.body;
+        if (c.transmission) patch.transmission = c.transmission;
+        if (c.importCountry)patch.importCountry= c.importCountry;
+        onChange({ ...value, ...patch });
+        setUrlMsg({ ok: true, text: `✅ Заповнено ${data.fieldsFound} полів з ${data.source}` });
+      } else {
+        setUrlMsg({ ok: false, text: data.message || 'Не вдалось розпізнати дані. Заповни вручну.' });
+      }
+    } catch {
+      setUrlMsg({ ok: false, text: 'Помилка зʼєднання' });
+    } finally {
+      setUrlLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="text-xs font-bold uppercase tracking-wider" style={{ color: accent }}>{title}</div>
+
+      {/* URL auto-fill */}
+      <div className="bg-zinc-900/60 border border-zinc-700 rounded-xl p-3 space-y-2">
+        <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">🔗 Вставити посилання з auto.ria / olx</p>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={urlInput}
+            onChange={e => { setUrlInput(e.target.value); setUrlMsg(null); }}
+            onKeyDown={e => e.key === 'Enter' && handleUrlLoad()}
+            placeholder="https://auto.ria.com/uk/auto_toyota_..."
+            className="flex-1 min-w-0 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 outline-none focus:border-amber-500 transition-colors"
+          />
+          <button
+            onClick={handleUrlLoad}
+            disabled={urlLoading || !urlInput.startsWith('http')}
+            style={{ borderColor: accent, color: urlLoading ? undefined : accent }}
+            className="px-3 py-2 rounded-lg border bg-transparent disabled:border-zinc-700 disabled:text-zinc-600 text-xs font-bold flex-shrink-0 flex items-center gap-1.5 transition-all hover:opacity-80">
+            {urlLoading ? '⏳' : '⬇️'} {urlLoading ? 'Завантаж…' : 'Авто'}
+          </button>
+        </div>
+        {urlMsg && (
+          <p className={`text-xs ${urlMsg.ok ? 'text-green-400' : 'text-amber-400'}`}>{urlMsg.text}</p>
+        )}
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <label className="text-xs text-zinc-500 uppercase tracking-wide">Марка</label>

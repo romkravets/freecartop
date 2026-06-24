@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import {
   MARKET_PRICES, MARKET_NEWS, POPULAR_MODELS,
-  getMarketPrice, getWeaknesses, resolveMarketKey,
+  getWeaknesses,
 } from '../lib/carMarket';
 
 function fmt(n)  { return Number(n).toLocaleString('en-US'); }
@@ -293,77 +293,120 @@ function PriceLookup() {
   const [modelInput, setModelInput] = useState('');
   const [yearInput,  setYearInput]  = useState('');
   const [priceInput, setPriceInput] = useState('');
-  const [searched,   setSearched]   = useState(false);
 
-  const marketResult = useMemo(() => {
-    if (!makeInput || !modelInput || !yearInput || !searched) return null;
-    return getMarketPrice(makeInput, modelInput, yearInput);
-  }, [makeInput, modelInput, yearInput, searched]);
+  const [loading,     setLoading]     = useState(false);
+  const [priceResult, setPriceResult] = useState(null);
+  const [fetchError,  setFetchError]  = useState('');
 
-  const weakness = useMemo(() => {
-    if (!makeInput || !modelInput || !searched) return null;
-    return getWeaknesses(makeInput, modelInput);
-  }, [makeInput, modelInput, searched]);
+  const reset = () => { setPriceResult(null); setFetchError(''); };
 
+  const handleSearch = async () => {
+    if (!makeInput || !modelInput) return;
+    setLoading(true);
+    reset();
+    try {
+      const params = new URLSearchParams({ make: makeInput, model: modelInput });
+      if (yearInput) params.set('year', yearInput);
+      const res  = await fetch(`/api/market-prices?${params}`);
+      const data = await res.json();
+      if (data.ok) setPriceResult(data);
+      else setFetchError('Помилка отримання цін');
+    } catch {
+      setFetchError('Помилка зʼєднання');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const marketAvg = priceResult?.avg ?? 0;
   const userPrice = parseInt(priceInput) || 0;
-  const marketAvg = marketResult?.avg ?? 0;
   const diff      = userPrice && marketAvg ? Math.round(((userPrice - marketAvg) / marketAvg) * 100) : null;
+  const isLive    = priceResult?.source?.includes('live');
 
   return (
     <div className="space-y-4">
-      <div className="text-xs font-bold uppercase tracking-wide text-amber-500">🔍 Перевірити ціну авто</div>
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-bold uppercase tracking-wide text-amber-500">🔍 Перевірити ціну авто</div>
+        {priceResult && (
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${isLive ? 'bg-green-950 text-green-400' : 'bg-zinc-800 text-zinc-400'}`}>
+            {isLive ? '🟢 Live auto.ria' : '📦 Статична база'}
+          </span>
+        )}
+      </div>
+
       <div className="grid sm:grid-cols-2 gap-3">
         {[
-          { label: 'Марка', value: makeInput, onChange: setMakeInput, placeholder: 'Toyota' },
-          { label: 'Модель', value: modelInput, onChange: setModelInput, placeholder: 'Camry' },
-          { label: 'Рік', value: yearInput, onChange: setYearInput, placeholder: '2017', type: 'number' },
-          { label: 'Ваша ціна ($)', value: priceInput, onChange: setPriceInput, placeholder: '14000', type: 'number' },
-        ].map(({ label, value, onChange, placeholder, type }) => (
+          { label: 'Марка',         value: makeInput,  set: setMakeInput,  placeholder: 'Toyota',  type: 'text'   },
+          { label: 'Модель',        value: modelInput, set: setModelInput, placeholder: 'Camry',   type: 'text'   },
+          { label: 'Рік',           value: yearInput,  set: setYearInput,  placeholder: '2017',    type: 'number' },
+          { label: 'Ваша ціна ($)', value: priceInput, set: setPriceInput, placeholder: '14000',   type: 'number' },
+        ].map(({ label, value, set, placeholder, type }) => (
           <div key={label} className="space-y-1">
             <label className="text-xs text-zinc-500 uppercase tracking-wide">{label}</label>
             <input
-              type={type ?? 'text'}
+              type={type}
               value={value}
-              onChange={e => { onChange(e.target.value); setSearched(false); }}
+              onChange={e => { set(e.target.value); reset(); }}
+              onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder={placeholder}
               className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-amber-500 transition-colors placeholder:text-zinc-600"
             />
           </div>
         ))}
       </div>
+
       <button
-        onClick={() => setSearched(true)}
-        disabled={!makeInput || !modelInput || !yearInput}
-        className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl text-sm transition-colors disabled:opacity-40"
+        onClick={handleSearch}
+        disabled={!makeInput || !modelInput || loading}
+        className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl text-sm transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
       >
-        Перевірити ціну
+        {loading ? <><span className="animate-spin">⏳</span> Отримую з auto.ria…</> : '🔍 Перевірити ціну'}
       </button>
 
-      {searched && (
+      {fetchError && <p className="text-xs text-red-400">{fetchError}</p>}
+
+      {priceResult && (
         <div className="space-y-3">
-          {marketResult ? (
+          {priceResult.avg ? (
             <>
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                <div className="text-xs text-zinc-500 mb-1">Середня ринкова ціна {makeInput} {modelInput} {yearInput}р.</div>
-                <div className="text-2xl font-black font-mono text-amber-400">{fmtD(marketResult.avg)}</div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-zinc-500">
+                    Середня ціна {makeInput} {modelInput} {yearInput && `${yearInput}р.`}
+                  </div>
+                  {isLive && priceResult.count && (
+                    <span className="text-[10px] text-zinc-600">{priceResult.count} оголошень</span>
+                  )}
+                </div>
+                <div className="text-2xl font-black font-mono text-amber-400">{fmtD(priceResult.avg)}</div>
+                {isLive && priceResult.min && priceResult.max && (
+                  <div className="text-xs text-zinc-500 mt-1">
+                    Діапазон: {fmtD(priceResult.min)} — {fmtD(priceResult.max)}
+                  </div>
+                )}
+                {!isLive && priceResult.staticAvg && (
+                  <div className="text-[10px] text-zinc-600 mt-1">
+                    Статична база — live-дані недоступні для цього авто
+                  </div>
+                )}
                 {diff !== null && (
-                  <div className={`text-sm mt-1 font-semibold ${Math.abs(diff) < 5 ? 'text-green-400' : diff > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                    {Math.abs(diff) < 5 ? '✅ В ринку' :
-                     diff > 15 ? `🔴 Дорого! На ${diff}% вище ринку` :
-                     diff > 5  ? `⚠️ Трохи дорого (+${diff}%)` :
-                     diff < -20 ? `⚠️ Підозріло дешево (${diff}%) — перевіряй` :
-                     `✅ Нижче ринку на ${Math.abs(diff)}%`}
+                  <div className={`text-sm mt-2 font-semibold ${Math.abs(diff) < 5 ? 'text-green-400' : diff > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    {Math.abs(diff) < 5   ? '✅ В ринку' :
+                     diff > 15            ? `🔴 Дорого! На ${diff}% вище ринку` :
+                     diff > 5             ? `⚠️ Трохи дорого (+${diff}%)` :
+                     diff < -20           ? `⚠️ Підозріло дешево (${diff}%) — перевіряй` :
+                                           `✅ Нижче ринку на ${Math.abs(diff)}%`}
                   </div>
                 )}
               </div>
 
-              {weakness && (
+              {priceResult.weakness && (
                 <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3">
                   <div className="text-xs font-bold text-amber-500 mb-2">⚙️ Типові витрати на ремонти</div>
                   <div className="flex gap-4 text-xs text-zinc-400">
-                    <span>1р: ~{fmtD(weakness.avgCosts.y1)}</span>
-                    <span>3р: ~{fmtD(weakness.avgCosts.y3)}</span>
-                    <span>5р: ~{fmtD(weakness.avgCosts.y5)}</span>
+                    <span>1р: ~{fmtD(priceResult.weakness.avgCosts.y1)}</span>
+                    <span>3р: ~{fmtD(priceResult.weakness.avgCosts.y3)}</span>
+                    <span>5р: ~{fmtD(priceResult.weakness.avgCosts.y5)}</span>
                   </div>
                 </div>
               )}
@@ -375,7 +418,7 @@ function PriceLookup() {
             </>
           ) : (
             <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 text-center text-sm text-zinc-500">
-              Дані для "{makeInput} {modelInput}" у базі відсутні.<br />
+              Дані для "{makeInput} {modelInput}" не знайдені.<br />
               <span className="text-xs text-zinc-600 mt-1 block">Спробуй: Toyota Camry, BMW 5 Series, Skoda Octavia…</span>
             </div>
           )}
