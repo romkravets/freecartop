@@ -494,10 +494,23 @@ const KEYFRAMES = `
 `;
 
 // ── MAIN COMPONENT ─────────────────────────────────────────
-export default function CarSimulator() {
+export default function CarSimulator({ preFill = null, onPreFillUsed }) {
   const [car1, setCar1] = useState({ ...EMPTY_PROFILE, make: 'Toyota', model: 'Camry', year: '2017', mileage: '95000', price: '14000' });
   const [car2, setCar2] = useState(EMPTY_PROFILE);
   const [showRival, setShowRival] = useState(false);
+
+  // Pre-fill car1 when navigating from picker
+  useEffect(() => {
+    if (!preFill) return;
+    setCar1(prev => ({
+      ...prev,
+      make:  preFill.make  || prev.make,
+      model: preFill.model || prev.model,
+      year:  preFill.year  || prev.year,
+      price: preFill.price || prev.price,
+    }));
+    onPreFillUsed?.();
+  }, [preFill]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [phase,      setPhase]      = useState('setup');
   const [yearIndex,  setYearIndex]  = useState(0);

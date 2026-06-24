@@ -117,6 +117,18 @@ const HOW_STEPS = [
 // ── MAIN PAGE ─────────────────────────────────────────────────
 export default function Page() {
   const [view, setView] = useState('landing'); // 'landing' | 'analyzer' | 'picker' | 'simulator' | 'market'
+  const [simulatorPreFill, setSimulatorPreFill] = useState(null);
+
+  function handleSimulateFromPicker(car) {
+    // car = { make, model, generation, priceRange, ... } from AICarPicker results
+    const yearMatch = String(car.generation ?? '').match(/(\d{4})/);
+    const year = yearMatch ? yearMatch[1] : '';
+    // priceRange like "$9 000–14 000" — take lower bound
+    const priceMatch = String(car.priceRange ?? '').match(/\$?([\d\s]+)/);
+    const price = priceMatch ? priceMatch[1].replace(/\s/g, '') : '';
+    setSimulatorPreFill({ make: car.make ?? '', model: car.model ?? '', year, price });
+    setView('simulator');
+  }
 
   if (view === 'analyzer' || view === 'picker' || view === 'simulator' || view === 'market') {
     return (
@@ -182,7 +194,7 @@ export default function Page() {
                   </span>
                 )}
               </div>
-              {HAS_AI ? <AICarPicker /> : <CarPicker />}
+              {HAS_AI ? <AICarPicker onSimulateClick={handleSimulateFromPicker} /> : <CarPicker />}
             </div>
           )}
           {view === 'simulator' && (
@@ -193,7 +205,7 @@ export default function Page() {
                   AI прорахує 5 років — ціна, стан двигуна, витрати на ТО і несподівані поломки
                 </p>
               </div>
-              <CarSimulator />
+              <CarSimulator preFill={simulatorPreFill} onPreFillUsed={() => setSimulatorPreFill(null)} />
             </div>
           )}
           {view === 'market' && (
