@@ -10,7 +10,8 @@ const AICarPicker = dynamic(() => import('../components/AICarPicker'),  { ssr: f
 // Static fallbacks (no API key needed)
 const CarAnalyzer  = dynamic(() => import('../components/CarAnalyzer'),  { ssr: false });
 const CarPicker    = dynamic(() => import('../components/CarPicker'),    { ssr: false });
-const CarSimulator = dynamic(() => import('../components/CarSimulator'), { ssr: false });
+const CarSimulator     = dynamic(() => import('../components/CarSimulator'),     { ssr: false });
+const MarketDashboard  = dynamic(() => import('../components/MarketDashboard'),  { ssr: false });
 
 const HAS_AI = Boolean(process.env.NEXT_PUBLIC_AI_ENABLED === 'true');
 
@@ -115,9 +116,9 @@ const HOW_STEPS = [
 
 // ── MAIN PAGE ─────────────────────────────────────────────────
 export default function Page() {
-  const [view, setView] = useState('landing'); // 'landing' | 'analyzer' | 'picker' | 'simulator'
+  const [view, setView] = useState('landing'); // 'landing' | 'analyzer' | 'picker' | 'simulator' | 'market'
 
-  if (view === 'analyzer' || view === 'picker' || view === 'simulator') {
+  if (view === 'analyzer' || view === 'picker' || view === 'simulator' || view === 'market') {
     return (
       <div className="min-h-screen bg-[#080808]">
         {/* Sticky Nav */}
@@ -131,9 +132,10 @@ export default function Page() {
             </button>
 
             <div className="flex gap-2">
-              <TabBtn id="analyzer"   active={view === 'analyzer'}   onClick={setView} emoji="🔍" label="Аналізатор" />
-              <TabBtn id="picker"     active={view === 'picker'}     onClick={setView} emoji="🎯" label="Підбір авто" />
-              <TabBtn id="simulator"  active={view === 'simulator'}  onClick={setView} emoji="🔮" label="Симулятор" />
+              <TabBtn id="analyzer"  active={view === 'analyzer'}  onClick={setView} emoji="🔍" label="Аналізатор" />
+              <TabBtn id="picker"    active={view === 'picker'}    onClick={setView} emoji="🎯" label="Підбір авто" />
+              <TabBtn id="simulator" active={view === 'simulator'} onClick={setView} emoji="🔮" label="Симулятор" />
+              <TabBtn id="market"    active={view === 'market'}    onClick={setView} emoji="📊" label="Ринок" />
             </div>
           </div>
         </header>
@@ -192,6 +194,17 @@ export default function Page() {
                 </p>
               </div>
               <CarSimulator />
+            </div>
+          )}
+          {view === 'market' && (
+            <div>
+              <div className="mb-6">
+                <h1 className="text-2xl font-black text-white">📊 Ринок авто в Україні</h1>
+                <p className="text-gray-500 text-sm mt-1">
+                  Реальні ціни AUTO.RIA/OLX, новини та AI-аналіз для популярних моделей
+                </p>
+              </div>
+              <MarketDashboard />
             </div>
           )}
         </main>
@@ -344,6 +357,12 @@ export default function Page() {
               className="px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-amber-700/40 font-bold text-base rounded-xl transition-all text-amber-400"
             >
               🔮 Симулятор авто
+            </button>
+            <button
+              onClick={() => setView('market')}
+              className="px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 font-bold text-base rounded-xl transition-all text-zinc-300"
+            >
+              📊 Ціни на ринку
             </button>
           </div>
         </div>

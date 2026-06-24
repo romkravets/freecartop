@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { getWeaknessPromptText } from "../../../lib/carMarket.js";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -29,6 +30,7 @@ function buildPrompt(p) {
   } = p;
   const age = new Date().getFullYear() - Number(year);
   const totalKm = Number(mileage) + 15000 * 5;
+  const weaknessText = getWeaknessPromptText(make, model);
 
   return `Ти — досвідчений автомеханік і аналітик UA ринку. Тобі потрібно змоделювати реалістичні події для конкретного авто протягом 5 років використання.
 
@@ -41,11 +43,11 @@ function buildPrompt(p) {
 - Коробка: ${transmission || "АКПП"}
 - Відомі проблеми: ${knownIssues || "не вказано"}
 - Вік авто: ${age} р.
-
+${weaknessText}
 ЗАВДАННЯ: Для кожного з 5 років — згенеруй 2-3 реалістичних події (поломки, ТО, сюрпризи).
 
 Враховуй:
-- РЕАЛЬНІ слабкі місця ЦІЄЇ моделі (наприклад DSG у VW, іржа кузова у Passat, VANOS у BMW, компресор у Mercedes)
+- РЕАЛЬНІ слабкі місця ЦІЄЇ моделі (вище надані дані — використовуй їх!)
 - Вік і пробіг: рік 1 — дрібниці, рік 3-4 — планові великі роботи, рік 5 — можливо капремонт
 - Країна ввезення: авто з США → вищий ризик прихованих пошкоджень, можливі іржа і електрика
 - Пальне: дизель → паливна система, сажовий фільтр (DPF) після 150k; гібрид → батарея
