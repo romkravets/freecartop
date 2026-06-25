@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertTriangle, Check, ChevronDown, ChevronUp, ExternalLink, Info, Loader2, Search, Share2, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IMPORT_OPTIONS } from '../lib/analyzer';
 
 // ── Score Ring ────────────────────────────────────────────────
@@ -401,6 +401,30 @@ export default function AIAnalyzer() {
   const [result,   setResult  ] = useState(null);
   const [error,    setError   ] = useState('');
 
+  // Live market price auto-fetch
+  const [marketPriceLive,    setMarketPriceLive   ] = useState(null); // { avg, source, count }
+  const [marketPriceLoading, setMarketPriceLoading] = useState(false);
+  const marketFetchRef = useRef(null);
+
+  useEffect(() => {
+    if (!make || !model || !year || year.length < 4) return;
+    clearTimeout(marketFetchRef.current);
+    marketFetchRef.current = setTimeout(async () => {
+      setMarketPriceLoading(true);
+      try {
+        const p = new URLSearchParams({ make, model, year });
+        const res  = await fetch(`/api/market-prices?${p}`);
+        const data = await res.json();
+        if (data.ok && data.avg) {
+          setMarketPriceLive(data);
+          if (!marketPrice) setMarketPrice(String(data.avg));
+        }
+      } catch { /* silent */ }
+      finally { setMarketPriceLoading(false); }
+    }, 800);
+    return () => clearTimeout(marketFetchRef.current);
+  }, [make, model, year]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Parse URL to auto-fill make/model
   const handleUrlChange = val => {
     setListingUrl(val);
@@ -682,10 +706,27 @@ export default function AIAnalyzer() {
               <Field label="Ціна продавця ($)">
                 <NumberInput value={priceAsked} onChange={setPriceAsked} placeholder="18 700" />
               </Field>
-              <Field label="Ринкова ціна (~$)">
-                <NumberInput value={marketPrice} onChange={setMarketPrice} placeholder="17 800" />
+              <Field label={
+                <span className="flex items-center gap-1.5">
+                  Ринкова ціна (~$)
+                  {marketPriceLoading && <span className="text-[10px] text-zinc-500 animate-pulse">…</span>}
+                  {!marketPriceLoading && marketPriceLive && (
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${marketPriceLive.source?.includes('live') ? 'bg-green-950 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                      {marketPriceLive.source?.includes('live') ? '🟢 Live' : '📦'}
+                    </span>
+                  )}
+                </span>
+              }>
+                <NumberInput value={marketPrice} onChange={v => { setMarketPrice(v); setMarketPriceLive(null); }} placeholder="17 800" />
               </Field>
             </div>
+            {marketPriceLive?.avg && !marketPriceLoading && (
+              <p className="text-xs text-zinc-500">
+                auto.ria: <span className="text-amber-400 font-mono font-bold">${Number(marketPriceLive.avg).toLocaleString()}</span>
+                {marketPriceLive.count ? ` · ${marketPriceLive.count} оголошень` : ''}
+                {marketPriceLive.min && marketPriceLive.max ? ` · $${Number(marketPriceLive.min).toLocaleString()}–$${Number(marketPriceLive.max).toLocaleString()}` : ''}
+              </p>
+            )}
             <Field label="Тижнів в оголошенні">
               <NumberInput value={weeksOnSale} onChange={setWeeksOnSale} placeholder="104" suffix="тиж." />
             </Field>
